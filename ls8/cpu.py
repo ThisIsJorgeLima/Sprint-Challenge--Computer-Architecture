@@ -21,11 +21,11 @@ class CPU:
         self.reg[7] = 0xF4
         self.sp = self.reg[7]
         # Flags
-        self.fl = {
-            'L': 0,  # Less - than
-            'G': 0,  # Greater - than
-            'E': 0  # Equal
-        }
+        # self.fl = {
+        #     'L': 0,  # Less - than
+        #     'G': 0,  # Greater - than
+        #     'E': 0  # Equal
+        # }
 
     def ram_read(self, address):
         """
@@ -74,17 +74,21 @@ class CPU:
                 during a CMP, set to 1 if reg_a is equal to reg_b,
                 zero otherwise
                 """
-                self.fl['E'] = 1  # Equal
+                # self.fl['E'] = 1  # Equal
+                self.flag = 0b00000001
+                # if a is less than b
             elif self.reg[reg_a] < self.reg[reg_b]:
                 """
                 during a CMP, set to 1 if reg_a is less than reg_b, zero otherwise.
                 """
-                self.fl['L'] = 1  # Less -than
+                # self.fl['L'] = 1  # Less -than
+                self.flag = 0b00000100
                 """
                 during a CMP, set to 1 if reg_a is greater than reg_b, zero otherwise.
                 """
             elif self.reg[reg_a] > self.reg[reg_b]:
-                self.fl['G'] = 1  # Greater-than
+                # self.fl['G'] = 1  # Greater-than
+                self.flag = 0b00000010
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -96,7 +100,7 @@ class CPU:
 
         print(f"TRACE: %02X | %02X %02X %02X |" % (
             self.pc,
-            self.fl,
+            # self.fl,
             # self.ie,
             self.ram_read(self.pc),
             self.ram_read(self.pc + 1),
@@ -248,7 +252,7 @@ class CPU:
                 self.sp += 1
                 # return our address:
                 self.pc = return_address
-            elif instruction == CMP:
+            elif instruction == 0b10100111:
                 # CMP function
                 # the compare function takes the next to values in the program counter
                 # as the pointers to the registers to be compared to
@@ -262,7 +266,7 @@ class CPU:
                 self.pc += 3
                 # JUMP function
                 # unconditional
-            elif instruction == JMP:
+            elif instruction == 0b01010100:
                 # the next value in the program counter is the address to jump to our address
                 # stored in the given register
                 address = self.ram_read(self.pc + 1)
@@ -271,11 +275,13 @@ class CPU:
                 # JEQ function
                 # Jump if Equal, i.e. if the Equ bit is 1 in the status register
             elif instruction == JEQ:
+                # if equal flag is set to true(1):
                 # the next value in the PC is the address to go to
                 # if our CMP function returned an equal flag
                 address = self.ram_read(self.pc + 1)
                 # Now will check if our flag is equal:
-                if self.fl['E'] == 1:
+                # if self.fl['E'] == 1:
+                if self.flag == 0b00000001:
                     # if the values are equal, it will jump to that designated address
                     self.pc = self.reg[address]
                 else:
@@ -283,14 +289,19 @@ class CPU:
                     self.pc += 2
                     # JNE function
                     # Jump if Not equal, i.e. if the Equ bit is
-            elif instruction == JNE:
+            elif instruction == 0b01010110:
                     # if equal flag is set to false(0), the address will be stored in reg_b
-                    # our next value in our PC is the address to go to;
-
-                    #     pass
-                    #
-                    # else:
+                    # our next value in our PC is the address to go to; however, if our CMP function does not return an equal flag:
+                address = self.ram_read(self.pc + 1)
+                # if self.fl['E'] != 0:
+                if self.flag != 0b00000001:
+                    # This is opposite to our JEQ function, if it is not equal, then it will jump to the next address.
+                    self.pc = self.reg[address]
+                else:
+                    # if our value IS equal, it will skip over to the JNE logic as the next command.
+                    self.pc += 2
+            else:
                     # print(f'unknown instruction {instruction} at address {IR}")
-                    # print(f"Our program counter value is: {self.pc}")
-                    # print(f"The command issued was: {self.ram_read(self.pc)}")
-                    # sys.exit(1)
+                print(f"Our program counter value is: {self.pc}")
+                print(f"The command issued was: {self.ram_read(self.pc)}")
+                sys.exit(1)
